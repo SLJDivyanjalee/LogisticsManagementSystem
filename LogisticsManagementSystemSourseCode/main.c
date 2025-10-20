@@ -47,7 +47,7 @@ void mainMenu(){
     printf(" 02. Distance Management\n");
     printf(" 03. Vehicle Management\n");
     printf(" 04. Delivery Request Handling\n");
-    printf(" 05. Cost, Time, and Fuel Calculations\n");
+    printf(" 05. Cost, Time and Fuel Calculations\n");
     printf(" 06. Delivery Records\n");
     printf(" 07. Finding the Least-Cost Route\n");
     printf(" 08. Exit\n\n");
@@ -62,6 +62,7 @@ void mainMenu(){
          break;
     case 2:
         printf(" \n02. Distance Management\n");
+         distanceManagement();
          break;
     case 3:
         printf(" \n03. Vehicle Management\n");
