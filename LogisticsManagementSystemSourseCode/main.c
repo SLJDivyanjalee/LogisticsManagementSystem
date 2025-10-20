@@ -4,11 +4,13 @@
 
 #define MAX_CITIES 30
 #define NAME_LENGTH 50
+#define NUM_VEHICLES 3
 
 void mainMenu();
 void reports();
 void cityManagement();
 void distanceManagement();
+void vehicleManagement();
 
 // City Management Functions
 void displayCityMenu();
@@ -26,14 +28,33 @@ void inputDistance(char cities[][NAME_LENGTH], int cityCount, int distances[][MA
 void editDistance(char cities[][NAME_LENGTH], int cityCount, int distances[][MAX_CITIES]);
 void displayDistanceTable(char cities[][NAME_LENGTH], int cityCount, int distances[][MAX_CITIES]);
 
+// Vehicle Management Functions
+void displayVehicleMenu();
+void initializeVehicles();
+void displayVehicles();
+int selectVehicle();
+
+// Vehicle structure
+typedef struct {
+    char type[20];
+    int capacity;
+    int ratePerKm;
+    int avgSpeed;
+    int fuelEfficiency;
+} Vehicle;
+
+
 char cities[MAX_CITIES][NAME_LENGTH];
 int cityCount = 0;
 int distances[MAX_CITIES][MAX_CITIES];
+Vehicle vehicles[NUM_VEHICLES];
 
 int main()
 {
     printf("\n      Logistics Management System  \n");
     printf("---------------------------------------\n");
+    initializeDistances(distances);
+    initializeVehicles();
     mainMenu();
     return 0;
 }
@@ -61,11 +82,12 @@ void mainMenu(){
          cityManagement();
          break;
     case 2:
-        printf(" \n02. Distance Management\n");
+        printf(" \n--- Distance Management ---\n");
          distanceManagement();
          break;
     case 3:
-        printf(" \n03. Vehicle Management\n");
+        printf(" \n--- Vehicle Management ---\n");
+        vehicleManagement();
          break;
     case 4:
         printf(" \n04. Delivery Request Handling\n");
@@ -169,7 +191,7 @@ void cityManagement() {
 }
 
 void displayCityMenu() {
-    printf("  Menu \n");
+    printf(" \tMenu \n");
     printf("1. Add a new city\n");
     printf("2. Display all cities\n");
     printf("3. Rename a city\n");
@@ -351,7 +373,7 @@ void distanceManagement() {
 }
 
 void displayDistanceMenu() {
-    printf("     Menu \n");
+    printf(" \tMenu \n");
     printf("1. Input distance between cities\n");
     printf("2. Edit distance between cities\n");
     printf("3. Display distance table\n");
@@ -531,3 +553,102 @@ void displayDistanceTable(char cities[][NAME_LENGTH], int cityCount, int distanc
     }
 }
 
+
+// ---------Vehicle Management System-----------------
+void vehicleManagement() {
+    int choice;
+
+    do {
+        displayVehicleMenu();
+        printf("Enter your choice (1-2): ");
+        scanf("%d", &choice);
+
+        while (getchar() != '\n');
+
+        switch (choice) {
+            case 1:
+                selectVehicle();
+                break;
+            case 2:
+                printf("Returning to Main Menu...\n");
+                break;
+            default:
+                printf("Invalid choice! Please try again.\n");
+        }
+        printf("\n");
+    } while (choice != 2);
+}
+
+void displayVehicleMenu() {
+    printf(" \tMenu\n");
+    printf("1. Select vehicle for estimation\n");
+    printf("2. Back to Main Menu\n\n");
+}
+
+void initializeVehicles() {
+    // Initialize Van
+    strcpy(vehicles[0].type, "Van");
+    vehicles[0].capacity = 1000;
+    vehicles[0].ratePerKm = 30;
+    vehicles[0].avgSpeed = 60;
+    vehicles[0].fuelEfficiency = 12;
+
+    // Initialize Truck
+    strcpy(vehicles[1].type, "Truck");
+    vehicles[1].capacity = 5000;
+    vehicles[1].ratePerKm = 40;
+    vehicles[1].avgSpeed = 50;
+    vehicles[1].fuelEfficiency = 6;
+
+    // Initialize Lorry
+    strcpy(vehicles[2].type, "Lorry");
+    vehicles[2].capacity = 10000;
+    vehicles[2].ratePerKm = 80;
+    vehicles[2].avgSpeed = 45;
+    vehicles[2].fuelEfficiency = 4;
+}
+
+void displayVehicles() {
+    printf("\n    - Available Vehicle Types -\n\n");
+    printf("%-10s %-12s %-15s %-12s %-18s\n",
+           "Type", "Capacity(kg)", "Rate per km(LKR)", "Avg Speed(km/h)", "Fuel Efficiency(km/l)");
+    printf("-------------------------------------------------------------------------\n");
+
+    for (int i = 0; i < NUM_VEHICLES; i++) {
+        printf("%-12s %-13d %-16d %-17d %-20d\n",
+               vehicles[i].type,
+               vehicles[i].capacity,
+               vehicles[i].ratePerKm,
+               vehicles[i].avgSpeed,
+               vehicles[i].fuelEfficiency);
+    }
+}
+
+int selectVehicle() {
+    int choice;
+
+    displayVehicles();
+
+    printf("\n\nSelect vehicle type:\n");
+    printf("1. Van (Capacity: 1000kg)\n");
+    printf("2. Truck (Capacity: 5000kg)\n");
+    printf("3. Lorry (Capacity: 10000kg)\n");
+    printf("\nEnter your choice (1-3): ");
+    scanf("%d", &choice);
+
+    while (getchar() != '\n');
+
+    if (choice >= 1 && choice <= 3) {
+        int index = choice - 1;
+        printf("\nVehicle selected: %s\n", vehicles[index].type);
+        printf("Capacity: %d kg\n", vehicles[index].capacity);
+        printf("Rate per km: LKR %d\n", vehicles[index].ratePerKm);
+        printf("Average Speed: %d km/h\n", vehicles[index].avgSpeed);
+        printf("Fuel Efficiency: %d km/l\n", vehicles[index].fuelEfficiency);
+
+        return index;
+    } else {
+        printf("Invalid choice! Please try again.\n");
+        return -1; // return -1 for invalid selection
+    }
+}
