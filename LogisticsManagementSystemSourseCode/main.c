@@ -5,12 +5,14 @@
 #define MAX_CITIES 30
 #define NAME_LENGTH 50
 #define NUM_VEHICLES 3
+#define MAX_DELIVERIES 100
 
 void mainMenu();
 void reports();
 void cityManagement();
 void distanceManagement();
 void vehicleManagement();
+void deliveryRequestHandling();
 
 // City Management Functions
 void displayCityMenu();
@@ -34,7 +36,11 @@ void initializeVehicles();
 void displayVehicles();
 int selectVehicle();
 
-// Vehicle structure
+//Delivery Request Dealing Functions
+void displayDeliveryMenu();
+void processDelivery();
+
+// vehicle structure
 typedef struct {
     char type[20];
     int capacity;
@@ -43,11 +49,27 @@ typedef struct {
     int fuelEfficiency;
 } Vehicle;
 
+// delivery structure
+typedef struct {
+    int deliveryId;
+    int sourceCity;
+    int destinationCity;
+    int weight;
+    int vehicleType;
+    int completed;
+} Delivery;
+
 
 char cities[MAX_CITIES][NAME_LENGTH];
 int cityCount = 0;
+
 int distances[MAX_CITIES][MAX_CITIES];
+
 Vehicle vehicles[NUM_VEHICLES];
+
+Delivery deliveries[MAX_DELIVERIES];
+int deliveryCount = 0;
+int nextDeliveryId = 1;
 
 int main()
 {
@@ -90,7 +112,8 @@ void mainMenu(){
         vehicleManagement();
          break;
     case 4:
-        printf(" \n04. Delivery Request Handling\n");
+        printf(" \n--- Delivery Request Handling ---\n");
+        deliveryRequestHandling();
          break;
     case 5:
         printf(" \n05. Cost, Time, and Fuel Calculations\n");
@@ -649,6 +672,164 @@ int selectVehicle() {
         return index;
     } else {
         printf("Invalid choice! Please try again.\n");
-        return -1; // return -1 for invalid selection
+        return -1;
+    }
+}
+
+
+// ---------Delivery Request Handling System-----------------
+void deliveryRequestHandling() {
+    int choice;
+
+    do {
+        displayDeliveryMenu();
+        printf("Enter your choice (1-3): ");
+        scanf("%d", &choice);
+
+        while (getchar() != '\n');
+
+        switch (choice) {
+            case 1:
+                processDelivery();
+                break;
+            case 2:
+                displayActiveDeliveries();
+                break;
+            case 3:
+                printf("Returning to Main Menu...\n");
+                break;
+            default:
+                printf("Invalid choice! Please try again.\n");
+        }
+        printf("\n");
+    } while (choice != 3);
+}
+
+void displayDeliveryMenu() {
+    printf(" \tMenu\n");
+    printf("1. Create new delivery request\n");
+    printf("2. View active deliveries\n");
+    printf("3. Back to Main Menu\n");
+}
+
+void processDelivery() {
+    if (cityCount < 2) {
+        printf("Error: Need at least 2 cities to create delivery!\n");
+        return;
+    }
+
+    if (deliveryCount >= MAX_DELIVERIES) {
+        printf("Error: Maximum delivery capacity reached!\n");
+        return;
+    }
+
+    int source, destination, weight, vehicleChoice;
+
+    printf("\nAvailable cities:\n");
+    displayCities(cities, cityCount);
+
+    printf("\nEnter source city number (1-%d): ", cityCount);
+    scanf("%d", &source);
+    if (source < 1 || source > cityCount) {
+        printf("Error: Invalid source city!\n");
+        return;
+    }
+    source--;
+
+    printf("Enter destination city number (1-%d): ", cityCount);
+    scanf("%d", &destination);
+    if (destination < 1 || destination > cityCount) {
+        printf("Error: Invalid destination city!\n");
+        return;
+    }
+    destination--;
+
+    // Validate source != destination
+    if (source == destination) {
+        printf("Error: Source and destination cannot be the same!\n");
+        return;
+    }
+
+    // Check if distance exists between cities
+    if (distances[source][destination] == -1) {
+        printf("Error: No distance set between %s and %s!\n", cities[source], cities[destination]);
+        return;
+    }
+
+    // Get weight
+    printf("Enter package weight (kg): ");
+    scanf("%d", &weight);
+    if (weight <= 0) {
+        printf("Error: Weight must be positive!\n");
+        return;
+    }
+
+    printf("\nAvailable vehicles:\n");
+    displayVehicles();
+    printf("\nSelect vehicle type (1=Van, 2=Truck, 3=Lorry): ");
+    scanf("%d", &vehicleChoice);
+
+    while (getchar() != '\n');
+
+    if (vehicleChoice < 1 || vehicleChoice > 3) {
+        printf("Error: Invalid vehicle choice!\n");
+        return;
+    }
+
+    int vehicleIndex = vehicleChoice - 1;
+
+    if (weight > vehicles[vehicleIndex].capacity) {
+        printf("Error: Weight (%d kg) exceeds %s capacity (%d kg)!\n",
+               weight, vehicles[vehicleIndex].type, vehicles[vehicleIndex].capacity);
+        return;
+    }
+
+    // Create delivery record
+    deliveries[deliveryCount].deliveryId = nextDeliveryId++;
+    deliveries[deliveryCount].sourceCity = source;
+    deliveries[deliveryCount].destinationCity = destination;
+    deliveries[deliveryCount].weight = weight;
+    deliveries[deliveryCount].vehicleType = vehicleIndex;
+    deliveries[deliveryCount].completed = 0;
+
+    printf("\nDelivery Request Created Successfully!\n");
+    printf("Delivery ID: %d\n", deliveries[deliveryCount].deliveryId);
+    printf("Route: %s => %s\n", cities[source], cities[destination]);
+    printf("Distance: %d km\n", distances[source][destination]);
+    printf("Weight: %d kg\n", weight);
+    printf("Vehicle: %s\n", vehicles[vehicleIndex].type);
+    printf("Status: Pending\n");
+
+    deliveryCount++;
+}
+
+void displayActiveDeliveries() {
+    if (deliveryCount == 0) {
+        printf("No active deliveries.\n");
+        return;
+    }
+
+    printf("\n\t Active Deliveries (%d) \n\n", deliveryCount);
+    printf("%-12s %-20s %-12s %-10s %-15s %-10s\n",
+           "Delivery ID", "Route", "Distance", "Weight", "Vehicle", "Status");
+    printf("------------------------------------------------------------------------\n");
+
+    int activeCount = 0;
+    for (int i = 0; i < deliveryCount; i++) {
+        if (!deliveries[i].completed) {
+            printf("%-12d %s => %-8s %-12d %-10d %-15s %-10s\n",
+                   deliveries[i].deliveryId,
+                   cities[deliveries[i].sourceCity],
+                   cities[deliveries[i].destinationCity],
+                   distances[deliveries[i].sourceCity][deliveries[i].destinationCity],
+                   deliveries[i].weight,
+                   vehicles[deliveries[i].vehicleType].type,
+                   "Pending");
+            activeCount++;
+        }
+    }
+
+    if (activeCount == 0) {
+        printf("No pending deliveries.\n");
     }
 }
