@@ -6,6 +6,7 @@
 #define NAME_LENGTH 50
 #define NUM_VEHICLES 3
 #define MAX_DELIVERIES 100
+#define FUEL_PRICE 310 // LKR per liter
 
 void mainMenu();
 void reports();
@@ -41,6 +42,11 @@ int selectVehicle();
 void displayDeliveryMenu();
 void processDelivery();
 
+// Cost, Time, and Fuel Calculations
+void costTimeFuelCalculations();
+void calculateDeliveryCost();
+
+
 // vehicle structure
 typedef struct {
     char type[20];
@@ -60,6 +66,16 @@ typedef struct {
     int completed;
 } Delivery;
 
+// Calculation structure
+typedef struct {
+    double deliveryCost;
+    double estimatedTime;
+    double fuelUsed;
+    double fuelCost;
+    double totalOperationalCost;
+    double profit;
+    double customerCharge;
+} Calculation;
 
 char cities[MAX_CITIES][NAME_LENGTH];
 int cityCount = 0;
@@ -71,6 +87,8 @@ Vehicle vehicles[NUM_VEHICLES];
 Delivery deliveries[MAX_DELIVERIES];
 int deliveryCount = 0;
 int nextDeliveryId = 1;
+
+Calculation calculations[MAX_DELIVERIES];
 
 int main()
 {
@@ -855,7 +873,7 @@ void costTimeFuelCalculations() {
 
         switch (choice) {
             case 1:
-                printf("Calculate cost for delivery\n");
+                calculateDeliveryCost();
                 break;
             case 2:
                  printf("View all calculations\n");
@@ -868,4 +886,68 @@ void costTimeFuelCalculations() {
         }
         printf("\n");
     } while (choice != 3);
+}
+
+void calculateDeliveryCost() {
+    if (deliveryCount == 0) {
+        printf("Error: No deliveries available for calculation!\n");
+        return;
+    }
+
+    int deliveryChoice;
+
+    printf("\nAvailable deliveries:\n");
+    displayActiveDeliveries();
+
+    printf("\nEnter delivery ID to calculate cost: ");
+    scanf("%d", &deliveryChoice);
+
+    int deliveryIndex = -1;
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].deliveryId == deliveryChoice && !deliveries[i].completed) {
+            deliveryIndex = i;
+            break;
+        }
+    }
+
+    if (deliveryIndex == -1) {
+        printf("Error: Delivery ID not found or already completed!\n");
+        return;
+    }
+
+    int source = deliveries[deliveryIndex].sourceCity;
+    int destination = deliveries[deliveryIndex].destinationCity;
+    int weight = deliveries[deliveryIndex].weight;
+    int vehicleIndex = deliveries[deliveryIndex].vehicleType;
+
+    int distance = distances[source][destination];
+
+    int ratePerKm = vehicles[vehicleIndex].ratePerKm;
+    int speed = vehicles[vehicleIndex].avgSpeed;
+    int efficiency = vehicles[vehicleIndex].fuelEfficiency;
+
+    // delivery cost: Cost = D * R * (1 + W/10000)
+    calculations[deliveryIndex].deliveryCost = distance * ratePerKm * (1 + weight / 10000.0);
+
+    // estimated delivery time (hours): Time = D / S
+    calculations[deliveryIndex].estimatedTime = (double)distance / speed;
+
+    // fuel consumption: Fuel Used = D / E
+    calculations[deliveryIndex].fuelUsed = (double)distance / efficiency;
+
+    // fuel cost: Fuel Cost = FuelUsed * F
+    calculations[deliveryIndex].fuelCost = calculations[deliveryIndex].fuelUsed * FUEL_PRICE;
+
+    // total operational cost: Total Cost = DeliveryCost + FuelCost
+    calculations[deliveryIndex].totalOperationalCost =
+        calculations[deliveryIndex].deliveryCost + calculations[deliveryIndex].fuelCost;
+
+    // profit calculation: 25% markup on base delivery cost
+    calculations[deliveryIndex].profit = calculations[deliveryIndex].deliveryCost * 0.25;
+
+    // final charge to customer: Customer Charge = TotalCost + Profit
+    calculations[deliveryIndex].customerCharge =
+        calculations[deliveryIndex].totalOperationalCost + calculations[deliveryIndex].profit;
+
+    printf("\nCalculations completed successfully!\n");
 }
