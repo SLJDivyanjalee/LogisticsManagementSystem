@@ -45,7 +45,7 @@ void processDelivery();
 // Cost, Time, and Fuel Calculations
 void costTimeFuelCalculations();
 void calculateDeliveryCost();
-
+void displayCalculationResults(int deliveryIndex);
 
 // vehicle structure
 typedef struct {
@@ -135,7 +135,7 @@ void mainMenu(){
         deliveryRequestHandling();
          break;
     case 5:
-        printf(" \n05. Cost, Time, and Fuel Calculations\n");
+        printf("\n--- Cost, Time and Fuel Calculations ---\n");
         costTimeFuelCalculations();
          break;
     case 6:
@@ -858,8 +858,6 @@ void displayActiveDeliveries() {
 void costTimeFuelCalculations() {
     int choice;
 
-    printf("\n--- Cost, Time and Fuel Calculations ---\n");
-
     do {
         printf(" \tMenu\n");
         printf("1. Calculate cost for delivery\n");
@@ -950,4 +948,66 @@ void calculateDeliveryCost() {
         calculations[deliveryIndex].totalOperationalCost + calculations[deliveryIndex].profit;
 
     printf("\nCalculations completed successfully!\n");
+     displayCalculationResults(deliveryIndex);
+}
+
+void displayCalculationResults(int deliveryIndex) {
+    Delivery *delivery = &deliveries[deliveryIndex];
+    Calculation *calc = &calculations[deliveryIndex];
+    int distance = distances[delivery->sourceCity][delivery->destinationCity];
+    int ratePerKm = vehicles[delivery->vehicleType].ratePerKm;
+    int weight = delivery->weight;
+
+    printf("\n======================================================\n");
+    printf("DELIVERY COST ESTIMATION\n");
+    printf("------------------------------------------------------\n");
+    printf("From: %s\n", cities[delivery->sourceCity]);
+    printf("To: %s\n", cities[delivery->destinationCity]);
+    printf("Minimum Distance: %d km\n", distance);
+    printf("Vehicle: %s\n", vehicles[delivery->vehicleType].type);
+    printf("Weight: %d kg\n", weight);
+    printf("------------------------------------------------------\n");
+
+    printf("Base Cost: %d x %d x (1 + %d/10000) = %.2f LKR\n",
+           distance, ratePerKm, weight, calc->deliveryCost);
+
+    printf("Fuel Used: %.2f L\n", calc->fuelUsed);
+    printf("Fuel Cost: %.2f LKR\n", calc->fuelCost);
+    printf("Operational Cost: %.2f LKR\n", calc->totalOperationalCost);
+    printf("Profit: %.2f LKR\n", calc->profit);
+    printf("Customer Charge: %.2f LKR\n", calc->customerCharge);
+    printf("Estimated Time: %.2f hours\n", calc->estimatedTime);
+    printf("======================================================\n");
+}
+
+void viewAllCalculations() {
+    if (deliveryCount == 0) {
+        printf("No deliveries available.\n");
+        return;
+    }
+
+    int hasCalculations = 0;
+
+    printf("\n=== All Delivery Calculations ===\n\n");
+    printf("%-12s %-20s %-10s %-15s %-15s %-15s\n",
+           "Delivery ID", "Route", "Weight", "Total Cost", "Time (hrs)", "Profit");
+    printf("--------------------------------------------------------------------------------\n");
+
+    for (int i = 0; i < deliveryCount; i++) {
+        if (calculations[i].customerCharge > 0) {
+            printf("%-12d %s -> %-8s %-10d LKR %-11.2f %-14.2f LKR %-11.2f\n",
+                   deliveries[i].deliveryId,
+                   cities[deliveries[i].sourceCity],
+                   cities[deliveries[i].destinationCity],
+                   deliveries[i].weight,
+                   calculations[i].customerCharge,
+                   calculations[i].estimatedTime,
+                   calculations[i].profit);
+            hasCalculations = 1;
+        }
+    }
+
+    if (!hasCalculations) {
+        printf("No calculations available. Use 'Calculate cost for delivery' first.\n");
+    }
 }
