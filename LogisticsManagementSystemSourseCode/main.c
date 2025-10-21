@@ -7,6 +7,7 @@
 #define NUM_VEHICLES 3
 #define MAX_DELIVERIES 100
 #define FUEL_PRICE 310 // LKR per liter
+#define INF 1000000
 
 void mainMenu();
 void reports();
@@ -15,6 +16,7 @@ void distanceManagement();
 void vehicleManagement();
 void deliveryRequestHandling();
 void costTimeFuelCalculations();
+void leastCostRoute();
 
 // City Management Functions
 void displayCityMenu();
@@ -38,7 +40,7 @@ void initializeVehicles();
 void displayVehicles();
 int selectVehicle();
 
-//Delivery Request Dealing Functions
+// Delivery Request Dealing Functions
 void displayDeliveryMenu();
 void processDelivery();
 
@@ -46,6 +48,13 @@ void processDelivery();
 void costTimeFuelCalculations();
 void calculateDeliveryCost();
 void displayCalculationResults(int deliveryIndex);
+
+//Finding the Least-Cost Route
+void displayRouteMenu();
+void findLeastCostRoute();
+int findPath(int source, int destination, int path[]);
+void displayRoute(int source, int destination, int path[], int distance);
+void displayAllOptimalRoutes();
 
 // vehicle structure
 typedef struct {
@@ -90,6 +99,8 @@ int nextDeliveryId = 1;
 
 Calculation calculations[MAX_DELIVERIES];
 
+int optimalRoutes[MAX_CITIES][MAX_CITIES];
+
 int main()
 {
     printf("\n      Logistics Management System  \n");
@@ -112,9 +123,10 @@ void mainMenu(){
     printf(" 05. Cost, Time and Fuel Calculations\n");
     printf(" 06. Delivery Records\n");
     printf(" 07. Finding the Least-Cost Route\n");
-    printf(" 08. Exit\n\n");
+    printf(" 08. Performance Reports\n");
+    printf(" 09. Exit\n\n");
 
-    printf("Enter your choice (1-8): ");
+    printf("Enter your choice (1-9): ");
     scanf("%d", &choiceMenu);
 
     switch(choiceMenu){
@@ -139,20 +151,23 @@ void mainMenu(){
         costTimeFuelCalculations();
          break;
     case 6:
-        printf(" \n06. Delivery Records: \n");
-        reports();
+        printf("\n--- Delivery Records ---\n");
          break;
     case 7:
-        printf(" \n07. Finding the Least-Cost Route\n");
+        printf("\n--- Finding the Least-Cost Route ---\n");
+         leastCostRoute();
          break;
     case 8:
+         printf("\n--- Performance Reports ---\n");
+         break;
+    case 9:
         printf(" \nExiting from the system\n");
          break;
     default:
         printf(" \nInvalid input. please try again\n");
          break;
     }
-    } while(choiceMenu != 8);
+    } while(choiceMenu !=9);
 }
 
 // ---------menu option “Reports”-----------------
@@ -804,7 +819,6 @@ void processDelivery() {
         return;
     }
 
-    // Create delivery record
     deliveries[deliveryCount].deliveryId = nextDeliveryId++;
     deliveries[deliveryCount].sourceCity = source;
     deliveries[deliveryCount].destinationCity = destination;
@@ -1009,5 +1023,225 @@ void viewAllCalculations() {
 
     if (!hasCalculations) {
         printf("No calculations available. Use 'Calculate cost for delivery' first.\n");
+    }
+}
+
+
+// ---------Least Cost Route System-----------------
+void leastCostRoute() {
+    int choice;
+
+    do {
+        printf(" \tMenu\n");
+        printf("1. Find least-cost route between cities\n");
+        printf("2. Display all optimal routes\n");
+        printf("3. Back to Main Menu\n\n");
+        printf("Enter your choice (1-3): ");
+        scanf("%d", &choice);
+
+        while (getchar() != '\n');
+
+        switch (choice) {
+            case 1:
+                findLeastCostRoute();
+                break;
+            case 2:
+                displayAllOptimalRoutes();
+                break;
+            case 3:
+                printf("Returning to Main Menu...\n");
+                break;
+            default:
+                printf("Invalid choice! Please try again.\n");
+        }
+        printf("\n");
+    } while (choice != 3);
+}
+
+
+void findLeastCostRoute() {
+    if (cityCount < 2) {
+        printf("Error: Need at least 2 cities to find routes!\n");
+        return;
+    }
+
+    int source, destination;
+
+    printf("\nAvailable cities:\n");
+    displayCities(cities, cityCount);
+
+    printf("\nEnter source city number (1-%d): ", cityCount);
+    scanf("%d", &source);
+    if (source < 1 || source > cityCount) {
+        printf("Error: Invalid source city!\n");
+        return;
+    }
+    source--;
+
+    printf("Enter destination city number (1-%d): ", cityCount);
+    scanf("%d", &destination);
+    if (destination < 1 || destination > cityCount) {
+        printf("Error: Invalid destination city!\n");
+        return;
+    }
+    destination--;
+
+    if (source == destination) {
+        printf("Error: Source and destination cannot be the same!\n");
+        return;
+    }
+
+    int path[MAX_CITIES];
+    int distance = findPath(source, destination, path);
+
+    if (distance == INF) {
+        printf("Error: No route exists between %s and %s!\n",
+               cities[source], cities[destination]);
+        return;
+    }
+
+    printf("\nLeast-Cost Route Found!\n");
+    displayRoute(source, destination, path, distance);
+
+    optimalRoutes[source][destination] = distance;
+}
+
+int findPath(int source, int destination, int path[]) {
+    int dist[MAX_CITIES];
+    int visited[MAX_CITIES];
+    int previous[MAX_CITIES];
+
+    for (int i = 0; i < cityCount; i++) {
+        dist[i] = INF;
+        visited[i] = 0;
+        previous[i] = -1;
+    }
+
+    dist[source] = 0;
+
+    for (int count = 0; count < cityCount - 1; count++) {
+        int minDist = INF;
+        int minIndex = -1;
+
+        for (int v = 0; v < cityCount; v++) {
+            if (!visited[v] && dist[v] < minDist) {
+                minDist = dist[v];
+                minIndex = v;
+            }
+        }
+
+        if (minIndex == -1) break;
+        visited[minIndex] = 1;
+
+        for (int v = 0; v < cityCount; v++) {
+            if (!visited[v] && distances[minIndex][v] != -1 &&
+                dist[minIndex] != INF &&
+                dist[minIndex] + distances[minIndex][v] < dist[v]) {
+                dist[v] = dist[minIndex] + distances[minIndex][v];
+                previous[v] = minIndex;
+            }
+        }
+    }
+
+    int current = destination;
+    int pathLength = 0;
+
+    while (current != -1) {
+        path[pathLength++] = current;
+        current = previous[current];
+    }
+
+    for (int i = 0; i < pathLength / 2; i++) {
+        int temp = path[i];
+        path[i] = path[pathLength - 1 - i];
+        path[pathLength - 1 - i] = temp;
+    }
+
+    return dist[destination];
+}
+
+void displayRoute(int source, int destination, int path[], int distance) {
+    int pathLength = 0;
+
+    while (path[pathLength] != destination && pathLength < cityCount) {
+        pathLength++;
+    }
+    pathLength++;
+
+    printf("\n======================================================\n");
+    printf("LEAST-COST ROUTE ANALYSIS\n");
+    printf("------------------------------------------------------\n");
+    printf("From: %s\n", cities[source]);
+    printf("To: %s\n", cities[destination]);
+    printf("------------------------------------------------------\n");
+
+    printf("Optimal Route: ");
+    for (int i = 0; i < pathLength; i++) {
+        printf("%s", cities[path[i]]);
+        if (i < pathLength - 1) {
+            printf(" -> ");
+        }
+    }
+    printf("\n");
+
+    printf("Total Distance: %d km\n", distance);
+
+    int directDistance = distances[source][destination];
+    if (directDistance != -1 && directDistance != distance) {
+        printf("Direct Route Distance: %d km\n", directDistance);
+        printf("Savings: %d km (%.1f%%)\n",
+               directDistance - distance,
+               ((double)(directDistance - distance) / directDistance) * 100);
+    }
+
+    printf("------------------------------------------------------\n");
+
+    printf("Route Breakdown:\n");
+    int total = 0;
+    for (int i = 0; i < pathLength - 1; i++) {
+        int segment = distances[path[i]][path[i+1]];
+        printf("  %s -> %s: %d km\n",
+               cities[path[i]], cities[path[i+1]], segment);
+        total += segment;
+    }
+    printf("  Total: %d km\n", total);
+
+    printf("======================================================\n");
+}
+
+void displayAllOptimalRoutes() {
+    if (cityCount < 2) {
+        printf("Need at least 2 cities to display routes.\n");
+        return;
+    }
+
+    printf("\n=== All Optimal Routes ===\n\n");
+    printf("%-20s %-20s %-15s\n", "Route", "Optimal Distance", "Direct Distance");
+    printf("------------------------------------------------------------\n");
+
+    int routeCount = 0;
+    for (int i = 0; i < cityCount; i++) {
+        for (int j = i + 1; j < cityCount; j++) {
+            if (i != j) {
+                int path[MAX_CITIES];
+                int optimalDist = findPath(i, j, path);
+                int directDist = distances[i][j];
+
+                if (optimalDist != INF) {
+                    printf("%s -> %-12s %-15d", cities[i], cities[j], optimalDist);
+                    if (directDist != -1) {
+                        printf("%-15d", directDist);
+                    } else {
+                        printf("%-15s", "No Direct");
+                    }
+                    printf("\n");
+                    routeCount++;
+                }
+            }
+        }
+    }
+
+    if (routeCount == 0) {
+        printf("No routes available. Add distances between cities first.\n");
     }
 }
