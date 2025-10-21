@@ -13,6 +13,7 @@ void cityManagement();
 void distanceManagement();
 void vehicleManagement();
 void deliveryRequestHandling();
+void costTimeFuelCalculations();
 
 // City Management Functions
 void displayCityMenu();
@@ -117,6 +118,7 @@ void mainMenu(){
          break;
     case 5:
         printf(" \n05. Cost, Time, and Fuel Calculations\n");
+        costTimeFuelCalculations();
          break;
     case 6:
         printf(" \n06. Delivery Records: \n");
@@ -832,4 +834,38 @@ void displayActiveDeliveries() {
     if (activeCount == 0) {
         printf("No pending deliveries.\n");
     }
+}
+
+// ---------Cost, Time and Fuel Calculations System-----------------
+void costTimeFuelCalculations() {
+    int choice;
+
+    printf("\n--- Cost, Time and Fuel Calculations ---\n");
+
+    do {
+        printf(" \tMenu\n");
+        printf("1. Calculate cost for delivery\n");
+        printf("2. View all calculations\n");
+        printf("3. Back to Main Menu\n");
+
+        printf("Enter your choice (1-3): ");
+        scanf("%d", &choice);
+
+        while (getchar() != '\n');
+
+        switch (choice) {
+            case 1:
+                printf("Calculate cost for delivery\n");
+                break;
+            case 2:
+                 printf("View all calculations\n");
+                break;
+            case 3:
+                printf("Returning to Main Menu...\n");
+                break;
+            default:
+                printf("Invalid choice! Please try again.\n");
+        }
+        printf("\n");
+    } while (choice != 3);
 }
