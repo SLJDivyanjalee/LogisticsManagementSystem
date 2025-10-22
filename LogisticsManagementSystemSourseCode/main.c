@@ -17,6 +17,7 @@ void vehicleManagement();
 void deliveryRequestHandling();
 void costTimeFuelCalculations();
 void leastCostRoute();
+void deliveryRecords();
 
 // City Management Functions
 void displayCityMenu();
@@ -56,6 +57,13 @@ int findPath(int source, int destination, int path[]);
 void displayRoute(int source, int destination, int path[], int distance);
 void displayAllOptimalRoutes();
 
+// Delivery Records
+void displayRecordsMenu();
+void viewAllDeliveries();
+void markDeliveryCompleted();
+void viewCompletedDeliveries();
+void viewPendingDeliveries();
+
 // vehicle structure
 typedef struct {
     char type[20];
@@ -85,6 +93,18 @@ typedef struct {
     double profit;
     double customerCharge;
 } Calculation;
+
+// Delivery Records
+typedef struct {
+    int deliveryId;
+    int sourceCity;
+    int destinationCity;
+    int weight;
+    int vehicleType;
+    int completed;
+    char completionTime[20];
+} Delivery;
+
 
 char cities[MAX_CITIES][NAME_LENGTH];
 int cityCount = 0;
@@ -152,6 +172,7 @@ void mainMenu(){
          break;
     case 6:
         printf("\n--- Delivery Records ---\n");
+        deliveryRecords();
          break;
     case 7:
         printf("\n--- Finding the Least-Cost Route ---\n");
@@ -1023,6 +1044,218 @@ void viewAllCalculations() {
 
     if (!hasCalculations) {
         printf("No calculations available. Use 'Calculate cost for delivery' first.\n");
+    }
+}
+
+
+// ---------Delivery Records -----------------
+void deliveryRecords() {
+    int choice;
+
+    printf("Maximum capacity: %d deliveries\n\n", MAX_DELIVERIES);
+
+    do {
+        displayRecordsMenu();
+        printf("Enter your choice (1-5): ");
+        scanf("%d", &choice);
+
+        while (getchar() != '\n');
+
+        switch (choice) {
+            case 1:
+                viewAllDeliveries();
+                break;
+            case 2:
+                viewPendingDeliveries();
+                break;
+            case 3:
+                viewCompletedDeliveries();
+                break;
+            case 4:
+                markDeliveryCompleted();
+                break;
+            case 5:
+                printf("Returning to Main Menu...\n");
+                break;
+            default:
+                printf("Invalid choice! Please try again.\n");
+        }
+        printf("\n");
+    } while (choice != 5);
+}
+
+void displayRecordsMenu() {
+    printf(" \tMenu\n");
+    printf("1. View all deliveries\n");
+    printf("2. View pending deliveries\n");
+    printf("3. View completed deliveries\n");
+    printf("4. Mark delivery as completed\n");
+    printf("5. Back to Main Menu\n");
+}
+
+void viewAllDeliveries() {
+    if (deliveryCount == 0) {
+        printf("No delivery records found.\n");
+        return;
+    }
+
+    printf("\n=== All Delivery Records (%d/%d) ===\n\n", deliveryCount, MAX_DELIVERIES);
+    printf("%-12s %-20s %-10s %-15s %-15s %-12s\n",
+           "Delivery ID", "Route", "Weight", "Vehicle", "Status", "Completed At");
+    printf("-------------------------------------------------------------------------------\n");
+
+    int pendingCount = 0;
+    int completedCount = 0;
+
+    for (int i = 0; i < deliveryCount; i++) {
+        char status[20];
+        char completionInfo[20];
+
+        if (deliveries[i].completed) {
+            strcpy(status, "Completed");
+            strcpy(completionInfo, deliveries[i].completionTime);
+            completedCount++;
+        } else {
+            strcpy(status, "Pending");
+            strcpy(completionInfo, "-");
+            pendingCount++;
+        }
+
+        printf("%-12d %s -> %-8s %-10d %-15s %-15s %-12s\n",
+               deliveries[i].deliveryId,
+               cities[deliveries[i].sourceCity],
+               cities[deliveries[i].destinationCity],
+               deliveries[i].weight,
+               vehicles[deliveries[i].vehicleType].type,
+               status,
+               completionInfo);
+    }
+
+    printf("\nSummary: %d pending, %d completed, %d total\n",
+           pendingCount, completedCount, deliveryCount);
+}
+
+void viewPendingDeliveries() {
+    if (deliveryCount == 0) {
+        printf("No delivery records found.\n");
+        return;
+    }
+
+    printf("\n=== Pending Deliveries ===\n\n");
+    printf("%-12s %-20s %-10s %-15s %-12s\n",
+           "Delivery ID", "Route", "Weight", "Vehicle", "Distance");
+    printf("----------------------------------------------------------------\n");
+
+    int pendingCount = 0;
+
+    for (int i = 0; i < deliveryCount; i++) {
+        if (!deliveries[i].completed) {
+            int distance = distances[deliveries[i].sourceCity][deliveries[i].destinationCity];
+
+            printf("%-12d %s -> %-8s %-10d %-15s %-12d km\n",
+                   deliveries[i].deliveryId,
+                   cities[deliveries[i].sourceCity],
+                   cities[deliveries[i].destinationCity],
+                   deliveries[i].weight,
+                   vehicles[deliveries[i].vehicleType].type,
+                   distance);
+            pendingCount++;
+        }
+    }
+
+    if (pendingCount == 0) {
+        printf("No pending deliveries. All deliveries are completed!\n");
+    } else {
+        printf("\nTotal pending deliveries: %d\n", pendingCount);
+    }
+}
+
+void viewCompletedDeliveries() {
+    if (deliveryCount == 0) {
+        printf("No delivery records found.\n");
+        return;
+    }
+
+    printf("\n=== Completed Deliveries ===\n\n");
+    printf("%-12s %-20s %-10s %-15s %-15s\n",
+           "Delivery ID", "Route", "Weight", "Vehicle", "Completed At");
+    printf("------------------------------------------------------------------------\n");
+
+    int completedCount = 0;
+
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].completed) {
+            printf("%-12d %s -> %-8s %-10d %-15s %-15s\n",
+                   deliveries[i].deliveryId,
+                   cities[deliveries[i].sourceCity],
+                   cities[deliveries[i].destinationCity],
+                   deliveries[i].weight,
+                   vehicles[deliveries[i].vehicleType].type,
+                   deliveries[i].completionTime);
+            completedCount++;
+        }
+    }
+
+    if (completedCount == 0) {
+        printf("No completed deliveries yet.\n");
+    } else {
+        printf("\nTotal completed deliveries: %d\n", completedCount);
+    }
+}
+
+void markDeliveryCompleted() {
+    if (deliveryCount == 0) {
+        printf("No deliveries available to mark as completed.\n");
+        return;
+    }
+
+    int deliveryId;
+    char completionTime[20];
+
+    printf("\nPending deliveries:\n");
+    viewPendingDeliveries();
+
+    printf("\nEnter delivery ID to mark as completed: ");
+    scanf("%d", &deliveryId);
+
+    while (getchar() != '\n');
+
+    int foundIndex = -1;
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].deliveryId == deliveryId && !deliveries[i].completed) {
+            foundIndex = i;
+            break;
+        }
+    }
+
+    if (foundIndex == -1) {
+        printf("Error: Delivery ID not found or already completed!\n");
+        return;
+    }
+
+    printf("Enter completion time (e.g., 2024-01-15 14:30): ");
+    fgets(completionTime, 20, stdin);
+    completionTime[strcspn(completionTime, "\n")] = 0;
+
+    deliveries[foundIndex].completed = 1;
+    strcpy(deliveries[foundIndex].completionTime, completionTime);
+
+    printf("\nDelivery ID %d marked as completed!\n", deliveryId);
+    printf("Route: %s -> %s\n",
+           cities[deliveries[foundIndex].sourceCity],
+           cities[deliveries[foundIndex].destinationCity]);
+    printf("Completed at: %s\n", completionTime);
+}
+
+void processDelivery() {
+    if (cityCount < 2) {
+        printf("Error: Need at least 2 cities to create delivery!\n");
+        return;
+    }
+
+    if (deliveryCount >= MAX_DELIVERIES) {
+        printf("Error: Maximum delivery capacity reached (%d deliveries)! Cannot create new delivery.\n", MAX_DELIVERIES);
+        return;
     }
 }
 
