@@ -18,6 +18,7 @@ void deliveryRequestHandling();
 void costTimeFuelCalculations();
 void leastCostRoute();
 void deliveryRecords();
+void performanceReports();
 
 // City Management Functions
 void displayCityMenu();
@@ -64,6 +65,14 @@ void markDeliveryCompleted();
 void viewCompletedDeliveries();
 void viewPendingDeliveries();
 
+// Performance Reports
+void displayReportsMenu();
+void totalDeliveriesCompleted();
+void totalDistanceCovered();
+void averageDeliveryTime();
+void totalRevenueAndProfit();
+void longestShortestRoutes();
+
 // vehicle structure
 typedef struct {
     char type[20];
@@ -94,7 +103,7 @@ typedef struct {
     double customerCharge;
 } Calculation;
 
-// Delivery Records
+// Delivery Records structure
 typedef struct {
     int deliveryId;
     int sourceCity;
@@ -105,6 +114,17 @@ typedef struct {
     char completionTime[20];
 } Delivery;
 
+// Performance Reports structure
+typedef struct {
+    int deliveryId;
+    int sourceCity;
+    int destinationCity;
+    int weight;
+    int vehicleType;
+    int completed;
+    char completionTime[20];
+    double actualDeliveryTime;
+} Delivery;
 
 char cities[MAX_CITIES][NAME_LENGTH];
 int cityCount = 0;
@@ -180,6 +200,7 @@ void mainMenu(){
          break;
     case 8:
          printf("\n--- Performance Reports ---\n");
+         performanceReports();
          break;
     case 9:
         printf(" \nExiting from the system\n");
@@ -190,48 +211,6 @@ void mainMenu(){
     }
     } while(choiceMenu !=9);
 }
-
-// ---------menu option “Reports”-----------------
-void reports(){
-
-    char choiceReport;
-do{
-    printf("\n=== Performance Reports ===\n");
-    printf(" a. Total Deliveries Completed\n");
-    printf(" b. Total Distance Covered\n");
-    printf(" c. Average Delivery Time\n");
-    printf(" d. Total Revenue and profit\n");
-    printf(" e. Longest and Shortest Routes Completed\n");
-    printf(" f. Back to Main Menu\n\n");
-
-    printf("Enter your choice (a-f): ");
-    scanf(" %c", &choiceReport);
-
-    switch(choiceReport){
-    case 'a':
-        printf(" \n a. Total Deliveries Completed");
-         break;
-    case 'b':
-        printf(" \n b. Total Distance Covered");
-         break;
-    case 'c':
-        printf(" \n c. Average Delivery Time");
-         break;
-    case 'd':
-        printf(" \n d. Total Revenue and Profit");
-         break;
-    case 'e':
-        printf(" \n e. Longest and Shortest Routes Completed");
-         break;
-    case 'f'://back to main menu
-        break;
-    default:
-        printf(" \n Invalid input. please try again");
-         break;
-    }
-    }while(choiceReport != 'f');
-}
-
 
 // --------- City Management -----------------
 void cityManagement() {
@@ -1478,3 +1457,348 @@ void displayAllOptimalRoutes() {
         printf("No routes available. Add distances between cities first.\n");
     }
 }
+
+// --------- performance Reports -----------------
+void reports(){
+
+    char choice;
+do{
+    printf("\n\tmenu\n");
+    printf(" a. Total Deliveries Completed\n");
+    printf(" b. Total Distance Covered\n");
+    printf(" c. Average Delivery Time\n");
+    printf(" d. Total Revenue and profit\n");
+    printf(" e. Longest and Shortest Routes Completed\n");
+    printf(" f. Back to Main Menu\n\n");
+
+        printf("Enter your choice (a-f): ");
+        scanf(" %c", &choice);
+
+        while (getchar() != '\n');
+
+        switch (choice) {
+            case 'a':
+                totalDeliveriesCompleted();
+                break;
+            case 'b':
+                totalDistanceCovered();
+                break;
+            case 'c':
+                averageDeliveryTime();
+                break;
+            case 'd':
+                totalRevenueAndProfit();
+                break;
+            case 'e':
+                longestShortestRoutes();
+                break;
+            case 'f':
+                printf("Returning to Main Menu...\n");
+                break;
+            default:
+                printf("Invalid choice! Please try again.\n");
+        }
+        printf("\n");
+    } while (choice != 'f');
+}
+
+void totalDeliveriesCompleted() {
+    int completedCount = 0;
+    int pendingCount = 0;
+
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].completed) {
+            completedCount++;
+        } else {
+            pendingCount++;
+        }
+    }
+
+    printf("\n=== Total Deliveries Completed ===\n");
+    printf("====================================\n");
+    printf("Completed Deliveries: %d\n", completedCount);
+    printf("Pending Deliveries:   %d\n", pendingCount);
+    printf("Total Deliveries:     %d/%d\n", deliveryCount, MAX_DELIVERIES);
+    printf("Completion Rate:      %.1f%%\n", deliveryCount > 0 ? (double)completedCount / deliveryCount * 100 : 0);
+    printf("====================================\n");
+
+    if (completedCount > 0) {
+        printf("\nRecent Completed Deliveries:\n");
+        printf("-----------------------------\n");
+        int displayCount = 0;
+        for (int i = deliveryCount - 1; i >= 0 && displayCount < 5; i--) {
+            if (deliveries[i].completed) {
+                printf("ID: %d | %s -> %s | %s\n",
+                       deliveries[i].deliveryId,
+                       cities[deliveries[i].sourceCity],
+                       cities[deliveries[i].destinationCity],
+                       deliveries[i].completionTime);
+                displayCount++;
+            }
+        }
+    }
+}
+
+void totalDistanceCovered() {
+    double totalDistance = 0;
+    int completedCount = 0;
+
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].completed) {
+            int distance = distances[deliveries[i].sourceCity][deliveries[i].destinationCity];
+            totalDistance += distance;
+            completedCount++;
+        }
+    }
+
+    printf("\n=== Total Distance Covered ===\n");
+    printf("================================\n");
+    printf("Total Distance:    %.0f km\n", totalDistance);
+    printf("Completed Trips:   %d\n", completedCount);
+
+    if (completedCount > 0) {
+        printf("Average per Trip:  %.1f km\n", totalDistance / completedCount);
+
+        // Distance breakdown by vehicle type
+        printf("\nDistance by Vehicle Type:\n");
+        printf("--------------------------\n");
+        double vanDistance = 0, truckDistance = 0, lorryDistance = 0;
+        int vanCount = 0, truckCount = 0, lorryCount = 0;
+
+        for (int i = 0; i < deliveryCount; i++) {
+            if (deliveries[i].completed) {
+                int distance = distances[deliveries[i].sourceCity][deliveries[i].destinationCity];
+                switch (deliveries[i].vehicleType) {
+                    case 0: vanDistance += distance; vanCount++; break;
+                    case 1: truckDistance += distance; truckCount++; break;
+                    case 2: lorryDistance += distance; lorryCount++; break;
+                }
+            }
+        }
+
+        if (vanCount > 0) printf("Van:   %.0f km (%d trips)\n", vanDistance, vanCount);
+        if (truckCount > 0) printf("Truck: %.0f km (%d trips)\n", truckDistance, truckCount);
+        if (lorryCount > 0) printf("Lorry: %.0f km (%d trips)\n", lorryDistance, lorryCount);
+    }
+    printf("================================\n");
+}
+
+void averageDeliveryTime() {
+    double totalTime = 0;
+    int completedCount = 0;
+    double minTime = INF;
+    double maxTime = 0;
+
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].completed && deliveries[i].actualDeliveryTime > 0) {
+            totalTime += deliveries[i].actualDeliveryTime;
+            completedCount++;
+
+            if (deliveries[i].actualDeliveryTime < minTime) {
+                minTime = deliveries[i].actualDeliveryTime;
+            }
+            if (deliveries[i].actualDeliveryTime > maxTime) {
+                maxTime = deliveries[i].actualDeliveryTime;
+            }
+        }
+    }
+
+    printf("\n=== Average Delivery Time ===\n");
+    printf("===============================\n");
+
+    if (completedCount > 0) {
+        printf("Average Time:      %.1f hours\n", totalTime / completedCount);
+        printf("Fastest Delivery:  %.1f hours\n", minTime);
+        printf("Slowest Delivery:  %.1f hours\n", maxTime);
+        printf("Total Samples:     %d deliveries\n", completedCount);
+
+        printf("\nEfficiency Analysis:\n");
+        printf("--------------------\n");
+        int onTime = 0, delayed = 0;
+
+        for (int i = 0; i < deliveryCount; i++) {
+            if (deliveries[i].completed && deliveries[i].actualDeliveryTime > 0) {
+                double estimatedTime = calculations[i].estimatedTime;
+                if (estimatedTime > 0) {
+                    if (deliveries[i].actualDeliveryTime <= estimatedTime * 1.1) {
+                        onTime++;
+                    } else {
+                        delayed++;
+                    }
+                }
+            }
+        }
+
+        printf("On-time Deliveries: %d (%.1f%%)\n", onTime, (double)onTime / completedCount * 100);
+        printf("Delayed Deliveries: %d (%.1f%%)\n", delayed, (double)delayed / completedCount * 100);
+    } else {
+        printf("No delivery time data available.\n");
+        printf("Mark deliveries as completed with actual time data.\n");
+    }
+    printf("===============================\n");
+}
+
+void totalRevenueAndProfit() {
+    double totalRevenue = 0;
+    double totalProfit = 0;
+    double totalCost = 0;
+    int completedCount = 0;
+
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].completed && calculations[i].customerCharge > 0) {
+            totalRevenue += calculations[i].customerCharge;
+            totalProfit += calculations[i].profit;
+            totalCost += calculations[i].totalOperationalCost;
+            completedCount++;
+        }
+    }
+
+    printf("\n=== Total Revenue and Profit ===\n");
+    printf("==================================\n");
+    printf("Total Revenue:    LKR %.2f\n", totalRevenue);
+    printf("Total Profit:     LKR %.2f\n", totalProfit);
+    printf("Total Costs:      LKR %.2f\n", totalCost);
+
+    if (completedCount > 0) {
+        printf("Completed Orders: %d\n", completedCount);
+        printf("Avg Revenue/Order:LKR %.2f\n", totalRevenue / completedCount);
+        printf("Avg Profit/Order: LKR %.2f\n", totalProfit / completedCount);
+        printf("Profit Margin:    %.1f%%\n", totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0);
+    }
+    printf("==================================\n");
+
+    if (completedCount > 0) {
+        printf("\nRevenue by Vehicle Type:\n");
+        printf("-------------------------\n");
+        double vanRevenue = 0, truckRevenue = 0, lorryRevenue = 0;
+
+        for (int i = 0; i < deliveryCount; i++) {
+            if (deliveries[i].completed && calculations[i].customerCharge > 0) {
+                switch (deliveries[i].vehicleType) {
+                    case 0: vanRevenue += calculations[i].customerCharge; break;
+                    case 1: truckRevenue += calculations[i].customerCharge; break;
+                    case 2: lorryRevenue += calculations[i].customerCharge; break;
+                }
+            }
+        }
+
+        if (vanRevenue > 0) printf("Van:   LKR %.2f\n", vanRevenue);
+        if (truckRevenue > 0) printf("Truck: LKR %.2f\n", truckRevenue);
+        if (lorryRevenue > 0) printf("Lorry: LKR %.2f\n", lorryRevenue);
+    }
+}
+
+void longestShortestRoutes() {
+    int longestDistance = 0;
+    int shortestDistance = INF;
+    int longestId = -1;
+    int shortestId = -1;
+    int completedCount = 0;
+
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].completed) {
+            completedCount++;
+            int distance = distances[deliveries[i].sourceCity][deliveries[i].destinationCity];
+
+            if (distance > longestDistance) {
+                longestDistance = distance;
+                longestId = i;
+            }
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                shortestId = i;
+            }
+        }
+    }
+
+    printf("\n=== Longest and Shortest Routes ===\n");
+    printf("=====================================\n");
+
+    if (completedCount > 0) {
+        printf("Longest Route:  %d km\n", longestDistance);
+        if (longestId != -1) {
+            printf("  Delivery ID:  %d\n", deliveries[longestId].deliveryId);
+            printf("  Route:        %s => %s\n",
+                   cities[deliveries[longestId].sourceCity],
+                   cities[deliveries[longestId].destinationCity]);
+            printf("  Vehicle:      %s\n", vehicles[deliveries[longestId].vehicleType].type);
+        }
+
+        printf("\nShortest Route: %d km\n", shortestDistance);
+        if (shortestId != -1) {
+            printf("  Delivery ID:  %d\n", deliveries[shortestId].deliveryId);
+            printf("  Route:        %s => %s\n",
+                   cities[deliveries[shortestId].sourceCity],
+                   cities[deliveries[shortestId].destinationCity]);
+            printf("  Vehicle:      %s\n", vehicles[deliveries[shortestId].vehicleType].type);
+        }
+
+        printf("\nRoute Statistics:\n");
+        printf("------------------\n");
+        int totalDistance = 0;
+        for (int i = 0; i < deliveryCount; i++) {
+            if (deliveries[i].completed) {
+                totalDistance += distances[deliveries[i].sourceCity][deliveries[i].destinationCity];
+            }
+        }
+        printf("Average Route:   %.1f km\n", (double)totalDistance / completedCount);
+        printf("Total Routes:    %d completed\n", completedCount);
+    } else {
+        printf("No completed routes to analyze.\n");
+    }
+    printf("=====================================\n");
+}
+
+void markDeliveryCompleted() {
+    if (deliveryCount == 0) {
+        printf("No deliveries available to mark as completed.\n");
+        return;
+    }
+
+    int deliveryId;
+    char completionTime[20];
+    double actualTime;
+
+    printf("\nPending deliveries:\n");
+    viewPendingDeliveries();
+
+    printf("\nEnter delivery ID to mark as completed: ");
+    scanf("%d", &deliveryId);
+
+    while (getchar() != '\n');
+
+    int foundIndex = -1;
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].deliveryId == deliveryId && !deliveries[i].completed) {
+            foundIndex = i;
+            break;
+        }
+    }
+
+    if (foundIndex == -1) {
+        printf("Error: Delivery ID not found or already completed!\n");
+        return;
+    }
+
+    printf("Enter completion time (e.g: 2025-10-22 17:30): ");
+    fgets(completionTime, 20, stdin);
+    completionTime[strcspn(completionTime, "\n")] = 0;
+
+    printf("Enter actual delivery time taken (hours): ");
+    scanf("%lf", &actualTime);
+
+    while (getchar() != '\n');
+
+    deliveries[foundIndex].completed = 1;
+    strcpy(deliveries[foundIndex].completionTime, completionTime);
+    deliveries[foundIndex].actualDeliveryTime = actualTime;
+
+    printf("\nDelivery ID %d marked as completed!\n", deliveryId);
+    printf("Route: %s -> %s\n",
+           cities[deliveries[foundIndex].sourceCity],
+           cities[deliveries[foundIndex].destinationCity]);
+    printf("Completed at: %s\n", completionTime);
+    printf("Actual time: %.1f hours\n", actualTime);
+}
+
+
