@@ -61,7 +61,6 @@ void displayAllOptimalRoutes();
 // Delivery Records
 void displayRecordsMenu();
 void viewAllDeliveries();
-void markDeliveryCompleted();
 void viewCompletedDeliveries();
 void viewPendingDeliveries();
 
@@ -82,16 +81,6 @@ typedef struct {
     int fuelEfficiency;
 } Vehicle;
 
-// delivery structure
-typedef struct {
-    int deliveryId;
-    int sourceCity;
-    int destinationCity;
-    int weight;
-    int vehicleType;
-    int completed;
-} Delivery;
-
 // Calculation structure
 typedef struct {
     double deliveryCost;
@@ -103,18 +92,7 @@ typedef struct {
     double customerCharge;
 } Calculation;
 
-// Delivery Records structure
-typedef struct {
-    int deliveryId;
-    int sourceCity;
-    int destinationCity;
-    int weight;
-    int vehicleType;
-    int completed;
-    char completionTime[20];
-} Delivery;
-
-// Performance Reports structure
+// Delivery,Performance Reports structure
 typedef struct {
     int deliveryId;
     int sourceCity;
@@ -1182,63 +1160,6 @@ void viewCompletedDeliveries() {
     }
 }
 
-void markDeliveryCompleted() {
-    if (deliveryCount == 0) {
-        printf("No deliveries available to mark as completed.\n");
-        return;
-    }
-
-    int deliveryId;
-    char completionTime[20];
-
-    printf("\nPending deliveries:\n");
-    viewPendingDeliveries();
-
-    printf("\nEnter delivery ID to mark as completed: ");
-    scanf("%d", &deliveryId);
-
-    while (getchar() != '\n');
-
-    int foundIndex = -1;
-    for (int i = 0; i < deliveryCount; i++) {
-        if (deliveries[i].deliveryId == deliveryId && !deliveries[i].completed) {
-            foundIndex = i;
-            break;
-        }
-    }
-
-    if (foundIndex == -1) {
-        printf("Error: Delivery ID not found or already completed!\n");
-        return;
-    }
-
-    printf("Enter completion time (e.g., 2024-01-15 14:30): ");
-    fgets(completionTime, 20, stdin);
-    completionTime[strcspn(completionTime, "\n")] = 0;
-
-    deliveries[foundIndex].completed = 1;
-    strcpy(deliveries[foundIndex].completionTime, completionTime);
-
-    printf("\nDelivery ID %d marked as completed!\n", deliveryId);
-    printf("Route: %s -> %s\n",
-           cities[deliveries[foundIndex].sourceCity],
-           cities[deliveries[foundIndex].destinationCity]);
-    printf("Completed at: %s\n", completionTime);
-}
-
-void processDelivery() {
-    if (cityCount < 2) {
-        printf("Error: Need at least 2 cities to create delivery!\n");
-        return;
-    }
-
-    if (deliveryCount >= MAX_DELIVERIES) {
-        printf("Error: Maximum delivery capacity reached (%d deliveries)! Cannot create new delivery.\n", MAX_DELIVERIES);
-        return;
-    }
-}
-
-
 // ---------Least Cost Route System-----------------
 void leastCostRoute() {
     int choice;
@@ -1459,7 +1380,7 @@ void displayAllOptimalRoutes() {
 }
 
 // --------- performance Reports -----------------
-void reports(){
+void performanceReports(){
 
     char choice;
 do{
@@ -1800,5 +1721,3 @@ void markDeliveryCompleted() {
     printf("Completed at: %s\n", completionTime);
     printf("Actual time: %.1f hours\n", actualTime);
 }
-
-
