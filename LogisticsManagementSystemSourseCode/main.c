@@ -11,11 +11,11 @@
 
 #define CITIES_FILE "cities.txt"
 #define DISTANCES_FILE "distances.txt"
+#define VEHICLES_FILE "vehicles.txt"
 #define DELIVERIES_FILE "deliveries.txt"
 #define CALCULATIONS_FILE "calculations.txt"
 
 void mainMenu();
-void reports();
 void cityManagement();
 void distanceManagement();
 void vehicleManagement();
@@ -26,7 +26,6 @@ void deliveryRecords();
 void performanceReports();
 
 // City Management Functions
-void displayCityMenu();
 void addCity(char cities[][NAME_LENGTH], int *count);
 void displayCities(char cities[][NAME_LENGTH], int count);
 void renameCity(char cities[][NAME_LENGTH], int count);
@@ -35,42 +34,38 @@ int findCity(char cities[][NAME_LENGTH], int count, char name[]);
 void toLowerCase(char str[]);
 
 // Distance Management Functions
-void displayDistanceMenu();
 void initializeDistances(int distances[][MAX_CITIES]);
 void inputDistance(char cities[][NAME_LENGTH], int cityCount, int distances[][MAX_CITIES]);
 void editDistance(char cities[][NAME_LENGTH], int cityCount, int distances[][MAX_CITIES]);
 void displayDistanceTable(char cities[][NAME_LENGTH], int cityCount, int distances[][MAX_CITIES]);
 
 // Vehicle Management Functions
-void displayVehicleMenu();
 void initializeVehicles();
 void displayVehicles();
 int selectVehicle();
 
 // Delivery Request Dealing Functions
-void displayDeliveryMenu();
 void processDelivery();
 
 // Cost, Time, and Fuel Calculations
 void costTimeFuelCalculations();
 void calculateDeliveryCost();
+void viewAllCalculations();
 void displayCalculationResults(int deliveryIndex);
 
 //Finding the Least-Cost Route
-void displayRouteMenu();
 void findLeastCostRoute();
 int findPath(int source, int destination, int path[]);
 void displayRoute(int source, int destination, int path[], int distance);
 void displayAllOptimalRoutes();
 
 // Delivery Records
-void displayRecordsMenu();
 void viewAllDeliveries();
 void viewCompletedDeliveries();
 void viewPendingDeliveries();
+void displayActiveDeliveries();
 
 // Performance Reports
-void displayReportsMenu();
 void totalDeliveriesCompleted();
 void totalDistanceCovered();
 void averageDeliveryTime();
@@ -96,6 +91,8 @@ typedef struct {
     int ratePerKm;
     int avgSpeed;
     int fuelEfficiency;
+    int totalVehicles;
+    int available;
 } Vehicle;
 
 // Calculation structure
@@ -249,7 +246,12 @@ void cityManagement() {
     printf("Maximum capacity: %d cities\n\n", MAX_CITIES);
 
     do {
-        displayCityMenu();
+        printf(" \tMenu \n");
+        printf("1. Add a new city\n");
+        printf("2. Display all cities\n");
+        printf("3. Rename a city\n");
+        printf("4. Remove a city\n");
+        printf("5. Back to Main Menu\n");
         printf("Enter your choice (1-5): ");
         scanf("%d", &choice);
 
@@ -276,15 +278,6 @@ void cityManagement() {
         }
         printf("\n");
     } while (choice != 5);
-}
-
-void displayCityMenu() {
-    printf(" \tMenu \n");
-    printf("1. Add a new city\n");
-    printf("2. Display all cities\n");
-    printf("3. Rename a city\n");
-    printf("4. Remove a city\n");
-    printf("5. Back to Main Menu\n");
 }
 
 void addCity(char cities[][NAME_LENGTH], int *count) {
@@ -467,9 +460,13 @@ void distanceManagement() {
     int choice;
 
     do {
-        displayDistanceMenu();
-        printf("Enter your choice (1-4): ");
-        scanf("%d", &choice);
+            printf(" \tMenu \n");
+            printf("1. Input distance between cities\n");
+            printf("2. Edit distance between cities\n");
+            printf("3. Display distance table\n");
+            printf("4. Back to Main Menu\n");
+            printf("Enter your choice (1-4): ");
+            scanf("%d", &choice);
 
         while (getchar() != '\n');
 
@@ -491,14 +488,6 @@ void distanceManagement() {
         }
         printf("\n");
     } while (choice != 4);
-}
-
-void displayDistanceMenu() {
-    printf(" \tMenu \n");
-    printf("1. Input distance between cities\n");
-    printf("2. Edit distance between cities\n");
-    printf("3. Display distance table\n");
-    printf("4. Back to Main Menu\n");
 }
 
 void initializeDistances(int distances[][MAX_CITIES]) {
@@ -699,13 +688,33 @@ void loadDistances() {
     fclose(file);
 }
 
+void saveDistances() {
+    FILE *file = fopen(DISTANCES_FILE, "w");
+    if (file == NULL) {
+        printf("Error: Could not create distances file!\n");
+        return;
+    }
+
+    fprintf(file, "%d\n", cityCount);
+    for (int i = 0; i < cityCount; i++) {
+        for (int j = 0; j < cityCount; j++) {
+            fprintf(file, "%d ", distances[i][j]);
+        }
+        fprintf(file, "\n");
+    }
+
+    fclose(file);
+}
+
 
 // ---------Vehicle Management System-----------------
 void vehicleManagement() {
     int choice;
 
     do {
-        displayVehicleMenu();
+        printf(" \tMenu\n");
+        printf("1. Select vehicle for estimation\n");
+        printf("2. Back to Main Menu\n\n");
         printf("Enter your choice (1-2): ");
         scanf("%d", &choice);
 
@@ -725,12 +734,6 @@ void vehicleManagement() {
     } while (choice != 2);
 }
 
-void displayVehicleMenu() {
-    printf(" \tMenu\n");
-    printf("1. Select vehicle for estimation\n");
-    printf("2. Back to Main Menu\n\n");
-}
-
 void initializeVehicles() {
     // Initialize Van
     strcpy(vehicles[0].type, "Van");
@@ -738,6 +741,8 @@ void initializeVehicles() {
     vehicles[0].ratePerKm = 30;
     vehicles[0].avgSpeed = 60;
     vehicles[0].fuelEfficiency = 12;
+    vehicles[0].totalVehicles = 3;
+    vehicles[0].available = 3;
 
     // Initialize Truck
     strcpy(vehicles[1].type, "Truck");
@@ -745,6 +750,8 @@ void initializeVehicles() {
     vehicles[1].ratePerKm = 40;
     vehicles[1].avgSpeed = 50;
     vehicles[1].fuelEfficiency = 6;
+    vehicles[1].totalVehicles = 2;
+    vehicles[1].available = 2;
 
     // Initialize Lorry
     strcpy(vehicles[2].type, "Lorry");
@@ -752,21 +759,24 @@ void initializeVehicles() {
     vehicles[2].ratePerKm = 80;
     vehicles[2].avgSpeed = 45;
     vehicles[2].fuelEfficiency = 4;
+    vehicles[2].totalVehicles = 3;
+    vehicles[2].available = 3;
 }
 
 void displayVehicles() {
-    printf("\n    - Available Vehicle Types -\n\n");
-    printf("%-10s %-12s %-15s %-12s %-18s\n",
-           "Type", "Capacity(kg)", "Rate per km(LKR)", "Avg Speed(km/h)", "Fuel Efficiency(km/l)");
-    printf("-------------------------------------------------------------------------\n");
+    printf("\n    - Available Vehicles -\n\n");
+    printf("Type       Capacity    Rate/km    Speed    Fuel Eff    Available\n");
+    printf("----------------------------------------------------------------\n");
 
     for (int i = 0; i < NUM_VEHICLES; i++) {
-        printf("%-12s %-13d %-16d %-17d %-20d\n",
+        printf("%-10s %-10d %-9d %-8d %-10d %d/%d\n",
                vehicles[i].type,
                vehicles[i].capacity,
                vehicles[i].ratePerKm,
                vehicles[i].avgSpeed,
-               vehicles[i].fuelEfficiency);
+               vehicles[i].fuelEfficiency,
+               vehicles[i].available,
+               vehicles[i].totalVehicles);
     }
 }
 
@@ -799,15 +809,67 @@ int selectVehicle() {
     }
 }
 
+void saveVehicles() {
+    FILE *file = fopen(VEHICLES_FILE, "w");
+    if (file == NULL) {
+        printf("Error: Could not create vehicles file!\n");
+        return;
+    }
+
+    for (int i = 0; i < NUM_VEHICLES; i++) {
+        fprintf(file, "%s,%d,%d,%d,%d,%d,%d\n",
+                vehicles[i].type,
+                vehicles[i].capacity,
+                vehicles[i].ratePerKm,
+                vehicles[i].avgSpeed,
+                vehicles[i].fuelEfficiency,
+                vehicles[i].available,
+                vehicles[i].totalVehicles);
+    }
+
+    fclose(file);
+}
+
+void loadVehicles() {
+    FILE *file = fopen(VEHICLES_FILE, "r");
+    if (file == NULL) {
+        printf("No existing vehicles data found. Using default values.\n");
+        initializeVehicles();
+        return;
+    }
+
+    for (int i = 0; i < NUM_VEHICLES; i++) {
+        if (fscanf(file, "%[^,],%d,%d,%d,%d,%d,%d\n",
+               vehicles[i].type,
+               &vehicles[i].capacity,
+               &vehicles[i].ratePerKm,
+               &vehicles[i].avgSpeed,
+               &vehicles[i].fuelEfficiency,
+               &vehicles[i].available,
+               &vehicles[i].totalVehicles) != 7) {
+            printf("Error reading vehicle data. Using defaults.\n");
+            initializeVehicles();
+            fclose(file);
+            return;
+        }
+    }
+
+    fclose(file);
+    printf("Vehicle states loaded successfully!\n");
+}
 
 // ---------Delivery Request Handling System-----------------
 void deliveryRequestHandling() {
     int choice;
 
     do {
-        displayDeliveryMenu();
-        printf("Enter your choice (1-3): ");
-        scanf("%d", &choice);
+            printf(" \tMenu\n");
+            printf("1. Create new delivery request\n");
+            printf("2. View active deliveries\n");
+            printf("3. Back to Main Menu\n");
+
+            printf("Enter your choice (1-3): ");
+            scanf("%d", &choice);
 
         while (getchar() != '\n');
 
@@ -826,13 +888,6 @@ void deliveryRequestHandling() {
         }
         printf("\n");
     } while (choice != 3);
-}
-
-void displayDeliveryMenu() {
-    printf(" \tMenu\n");
-    printf("1. Create new delivery request\n");
-    printf("2. View active deliveries\n");
-    printf("3. Back to Main Menu\n");
 }
 
 void processDelivery() {
@@ -923,6 +978,7 @@ void processDelivery() {
     printf("Status: Pending\n");
 
     deliveryCount++;
+    vehicles[vehicleIndex].available--; // available -= using
 }
 
 void displayActiveDeliveries() {
@@ -1227,7 +1283,12 @@ void deliveryRecords() {
     printf("Maximum capacity: %d deliveries\n\n", MAX_DELIVERIES);
 
     do {
-        displayRecordsMenu();
+        printf(" \tMenu\n");
+        printf("1. View all deliveries\n");
+        printf("2. View pending deliveries\n");
+        printf("3. View completed deliveries\n");
+        printf("4. Mark delivery as completed\n");
+        printf("5. Back to Main Menu\n");
         printf("Enter your choice (1-5): ");
         scanf("%d", &choice);
 
@@ -1254,15 +1315,6 @@ void deliveryRecords() {
         }
         printf("\n");
     } while (choice != 5);
-}
-
-void displayRecordsMenu() {
-    printf(" \tMenu\n");
-    printf("1. View all deliveries\n");
-    printf("2. View pending deliveries\n");
-    printf("3. View completed deliveries\n");
-    printf("4. Mark delivery as completed\n");
-    printf("5. Back to Main Menu\n");
 }
 
 void viewAllDeliveries() {
@@ -1373,6 +1425,61 @@ void viewCompletedDeliveries() {
     } else {
         printf("\nTotal completed deliveries: %d\n", completedCount);
     }
+}
+
+void markDeliveryCompleted() {
+    if (deliveryCount == 0) {
+        printf("No deliveries available to mark as completed.\n");
+        return;
+    }
+
+    int deliveryId;
+    char completionTime[20];
+    double actualTime;
+
+    printf("\nPending deliveries:\n");
+    viewPendingDeliveries();
+
+    printf("\nEnter delivery ID to mark as completed: ");
+    scanf("%d", &deliveryId);
+
+    while (getchar() != '\n');
+
+    int foundIndex = -1;
+    for (int i = 0; i < deliveryCount; i++) {
+        if (deliveries[i].deliveryId == deliveryId && !deliveries[i].completed) {
+            foundIndex = i;
+            break;
+        }
+    }
+
+    if (foundIndex == -1) {
+        printf("Error: Delivery ID not found or already completed!\n");
+        return;
+    }
+
+    printf("Enter completion time (e.g: 2025-10-22 17:30): ");
+    fgets(completionTime, 20, stdin);
+    completionTime[strcspn(completionTime, "\n")] = 0;
+
+    printf("Enter actual delivery time taken (hours): ");
+    scanf("%lf", &actualTime);
+
+    while (getchar() != '\n');
+
+    deliveries[foundIndex].completed = 1;
+    strcpy(deliveries[foundIndex].completionTime, completionTime);
+    deliveries[foundIndex].actualDeliveryTime = actualTime;
+
+    printf("\nDelivery ID %d marked as completed!\n", deliveryId);
+    printf("Route: %s -> %s\n",
+           cities[deliveries[foundIndex].sourceCity],
+           cities[deliveries[foundIndex].destinationCity]);
+    printf("Completed at: %s\n", completionTime);
+    printf("Actual time: %.1f hours\n", actualTime);
+
+    vehicles[deliveries[foundIndex].vehicleType].available++; // available += used
+
 }
 
 // ---------Least Cost Route System-----------------
@@ -1884,57 +1991,3 @@ void longestShortestRoutes() {
     }
     printf("=====================================\n");
 }
-
-void markDeliveryCompleted() {
-    if (deliveryCount == 0) {
-        printf("No deliveries available to mark as completed.\n");
-        return;
-    }
-
-    int deliveryId;
-    char completionTime[20];
-    double actualTime;
-
-    printf("\nPending deliveries:\n");
-    viewPendingDeliveries();
-
-    printf("\nEnter delivery ID to mark as completed: ");
-    scanf("%d", &deliveryId);
-
-    while (getchar() != '\n');
-
-    int foundIndex = -1;
-    for (int i = 0; i < deliveryCount; i++) {
-        if (deliveries[i].deliveryId == deliveryId && !deliveries[i].completed) {
-            foundIndex = i;
-            break;
-        }
-    }
-
-    if (foundIndex == -1) {
-        printf("Error: Delivery ID not found or already completed!\n");
-        return;
-    }
-
-    printf("Enter completion time (e.g: 2025-10-22 17:30): ");
-    fgets(completionTime, 20, stdin);
-    completionTime[strcspn(completionTime, "\n")] = 0;
-
-    printf("Enter actual delivery time taken (hours): ");
-    scanf("%lf", &actualTime);
-
-    while (getchar() != '\n');
-
-    deliveries[foundIndex].completed = 1;
-    strcpy(deliveries[foundIndex].completionTime, completionTime);
-    deliveries[foundIndex].actualDeliveryTime = actualTime;
-
-    printf("\nDelivery ID %d marked as completed!\n", deliveryId);
-    printf("Route: %s -> %s\n",
-           cities[deliveries[foundIndex].sourceCity],
-           cities[deliveries[foundIndex].destinationCity]);
-    printf("Completed at: %s\n", completionTime);
-    printf("Actual time: %.1f hours\n", actualTime);
-}
-
-
