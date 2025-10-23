@@ -9,6 +9,11 @@
 #define FUEL_PRICE 310 // LKR per liter
 #define INF 1000000
 
+#define CITIES_FILE "cities.txt"
+#define DISTANCES_FILE "distances.txt"
+#define DELIVERIES_FILE "deliveries.txt"
+#define CALCULATIONS_FILE "calculations.txt"
+
 void mainMenu();
 void reports();
 void cityManagement();
@@ -72,6 +77,18 @@ void averageDeliveryTime();
 void totalRevenueAndProfit();
 void longestShortestRoutes();
 
+// File Handling
+void saveData();
+void loadData();
+void saveCities();
+void loadCities();
+void saveDistances();
+void loadDistances();
+void saveDeliveries();
+void loadDeliveries();
+void saveCalculations();
+void loadCalculations();
+
 // vehicle structure
 typedef struct {
     char type[20];
@@ -123,11 +140,40 @@ int main()
 {
     printf("\n      Logistics Management System  \n");
     printf("---------------------------------------\n");
+
+    //initialize data
     initializeDistances(distances);
     initializeVehicles();
+
+    // Loading data
+    loadData();
+
     mainMenu();
+
+    // Saving data
+    saveData();
+
     return 0;
 }
+
+
+// --------- File Handling -----------------
+void saveData() {
+    saveCities();
+    saveDistances();
+    saveDeliveries();
+    saveCalculations();
+    printf("data saved successfully!\n");
+}
+
+void loadData() {
+    loadCities();
+    loadDistances();
+    loadDeliveries();
+    loadCalculations();
+    printf("data loaded successfully!\n");
+}
+
 
 //-------main features-------------------
 void mainMenu(){
@@ -142,9 +188,10 @@ void mainMenu(){
     printf(" 06. Delivery Records\n");
     printf(" 07. Finding the Least-Cost Route\n");
     printf(" 08. Performance Reports\n");
-    printf(" 09. Exit\n\n");
+    printf(" 09. Save Data to Files\n");
+    printf(" 10. Exit\n\n");
 
-    printf("Enter your choice (1-9): ");
+    printf("Enter your choice (1-10): ");
     scanf("%d", &choiceMenu);
 
     switch(choiceMenu){
@@ -181,13 +228,18 @@ void mainMenu(){
          performanceReports();
          break;
     case 9:
+        printf(" \nSaving data\n");
+        saveData();
+         break;
+    case 10:
         printf(" \nExiting from the system\n");
+        saveData();
          break;
     default:
         printf(" \nInvalid input. please try again\n");
          break;
     }
-    } while(choiceMenu !=9);
+    } while(choiceMenu !=10);
 }
 
 // --------- City Management -----------------
@@ -374,6 +426,39 @@ void toLowerCase(char str[]) {
             str[i] = str[i] + 32;
         }
     }
+}
+
+void saveCities() {
+    FILE *file = fopen(CITIES_FILE, "w");
+    if (file == NULL) {
+        printf("Error: Could not create cities file!\n");
+        return;
+    }
+
+    fprintf(file, "%d\n", cityCount);
+    for (int i = 0; i < cityCount; i++) {
+        fprintf(file, "%s\n", cities[i]);
+    }
+
+    fclose(file);
+}
+
+void loadCities() {
+    FILE *file = fopen(CITIES_FILE, "r");
+    if (file == NULL) {
+        printf("No existing cities data found. Starting fresh.\n");
+        return;
+    }
+
+    fscanf(file, "%d", &cityCount);
+    fgetc(file); // read newline
+
+    for (int i = 0; i < cityCount; i++) {
+        fgets(cities[i], NAME_LENGTH, file);
+        cities[i][strcspn(cities[i], "\n")] = 0; // remove newline
+    }
+
+    fclose(file);
 }
 
 
@@ -587,6 +672,31 @@ void displayDistanceTable(char cities[][NAME_LENGTH], int cityCount, int distanc
         }
         printf("\n");
     }
+}
+
+void loadDistances() {
+    FILE *file = fopen(DISTANCES_FILE, "r");
+    if (file == NULL) {
+        printf("No existing distances data found. Starting fresh.\n");
+        return;
+    }
+
+    int loadedCityCount;
+    fscanf(file, "%d", &loadedCityCount);
+
+    // Only load if city count matches
+    if (loadedCityCount == cityCount) {
+        for (int i = 0; i < cityCount; i++) {
+            for (int j = 0; j < cityCount; j++) {
+                fscanf(file, "%d", &distances[i][j]);
+            }
+        }
+    } else {
+        printf("City count mismatch. Reinitializing distances.\n");
+        initializeDistances(distances);
+    }
+
+    fclose(file);
 }
 
 
@@ -846,6 +956,61 @@ void displayActiveDeliveries() {
     }
 }
 
+void saveDeliveries() {
+    FILE *file = fopen(DELIVERIES_FILE, "w");
+    if (file == NULL) {
+        printf("Error: Could not create deliveries file!\n");
+        return;
+    }
+
+    fprintf(file, "%d %d\n", deliveryCount, nextDeliveryId);
+    for (int i = 0; i < deliveryCount; i++) {
+        fprintf(file, "%d %d %d %d %d %d %s %.2f\n",
+                deliveries[i].deliveryId,
+                deliveries[i].sourceCity,
+                deliveries[i].destinationCity,
+                deliveries[i].weight,
+                deliveries[i].vehicleType,
+                deliveries[i].completed,
+                deliveries[i].completionTime,
+                deliveries[i].actualDeliveryTime);
+    }
+
+    fclose(file);
+}
+
+void loadDeliveries() {
+    FILE *file = fopen(DELIVERIES_FILE, "r");
+    if (file == NULL) {
+        printf("No existing deliveries data found. Starting fresh.\n");
+        return;
+    }
+
+    fscanf(file, "%d %d", &deliveryCount, &nextDeliveryId);
+
+    for (int i = 0; i < deliveryCount; i++) {
+        fscanf(file, "%d %d %d %d %d %d",
+               &deliveries[i].deliveryId,
+               &deliveries[i].sourceCity,
+               &deliveries[i].destinationCity,
+               &deliveries[i].weight,
+               &deliveries[i].vehicleType,
+               &deliveries[i].completed);
+
+        // Read completion time (may contain spaces)
+        char timeBuffer[20];
+        fscanf(file, " ");
+        fgets(timeBuffer, 20, file);
+        timeBuffer[strcspn(timeBuffer, "\n")] = 0;
+        strcpy(deliveries[i].completionTime, timeBuffer);
+
+        fscanf(file, "%lf", &deliveries[i].actualDeliveryTime);
+    }
+
+    fclose(file);
+}
+
+
 // ---------Cost, Time and Fuel Calculations System-----------------
 void costTimeFuelCalculations() {
     int choice;
@@ -866,7 +1031,8 @@ void costTimeFuelCalculations() {
                 calculateDeliveryCost();
                 break;
             case 2:
-                 printf("View all calculations\n");
+                 printf("All calculations : \n");
+                 viewAllCalculations();
                 break;
             case 3:
                 printf("Returning to Main Menu...\n");
@@ -1002,6 +1168,55 @@ void viewAllCalculations() {
     if (!hasCalculations) {
         printf("No calculations available. Use 'Calculate cost for delivery' first.\n");
     }
+}
+
+void saveCalculations() {
+    FILE *file = fopen(CALCULATIONS_FILE, "w");
+    if (file == NULL) {
+        printf("Error: Could not create calculations file!\n");
+        return;
+    }
+
+    fprintf(file, "%d\n", deliveryCount);
+    for (int i = 0; i < deliveryCount; i++) {
+        fprintf(file, "%.2f %.2f %.2f %.2f %.2f %.2f %.2f\n",
+                calculations[i].deliveryCost,
+                calculations[i].estimatedTime,
+                calculations[i].fuelUsed,
+                calculations[i].fuelCost,
+                calculations[i].totalOperationalCost,
+                calculations[i].profit,
+                calculations[i].customerCharge);
+    }
+
+    fclose(file);
+}
+
+void loadCalculations() {
+    FILE *file = fopen(CALCULATIONS_FILE, "r");
+    if (file == NULL) {
+        printf("No existing calculations data found. Starting fresh.\n");
+        return;
+    }
+
+    int calcCount;
+    fscanf(file, "%d", &calcCount);
+
+    // Only load calculations for existing deliveries
+    int maxCount = (calcCount < deliveryCount) ? calcCount : deliveryCount;
+
+    for (int i = 0; i < maxCount; i++) {
+        fscanf(file, "%lf %lf %lf %lf %lf %lf %lf",
+               &calculations[i].deliveryCost,
+               &calculations[i].estimatedTime,
+               &calculations[i].fuelUsed,
+               &calculations[i].fuelCost,
+               &calculations[i].totalOperationalCost,
+               &calculations[i].profit,
+               &calculations[i].customerCharge);
+    }
+
+    fclose(file);
 }
 
 
@@ -1721,3 +1936,5 @@ void markDeliveryCompleted() {
     printf("Completed at: %s\n", completionTime);
     printf("Actual time: %.1f hours\n", actualTime);
 }
+
+
